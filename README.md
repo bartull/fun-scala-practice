@@ -1,4 +1,4 @@
-# Functional Programming Playground
+# FP Playground
 
 Simple implementations of Applicative, Monad and friends, just for fun and practice.
 

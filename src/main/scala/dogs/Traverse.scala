@@ -3,7 +3,7 @@ package dogs
 import IdMonad.Id
 import IdMonad.MonadInstance
 
-trait Traverse[F[_]] extends Functor[F] with Foldable[F] {
+trait Traverse[F[_]] extends Functor[F] with Foldable[F] { self =>
 
   def traverse[G[_]: Applicative, A, B](fa: F[A])(f: A => G[B]): G[F[B]]
 
@@ -32,6 +32,16 @@ trait Traverse[F[_]] extends Functor[F] with Foldable[F] {
         (b, next) = f(a, curr)
       } yield b
     }.run(s).swap
+
+  def fuse[G[_], H[_]: Applicative, A, B](fa: F[A])(f: A => G[B], g: A => H[B])
+                                         (implicit ga: Applicative[G]): (G[F[B]], H[F[B]]) =
+    traverse[({type F[X] = (G[X], H[X])})#F, A, B](fa)(a => (f(a), g(a)))(ga.product[H])
+
+  def compose[G[_]](implicit g: Traverse[G]): Traverse[({type H[X] = F[G[X]]})#H] =
+    new Traverse[({type H[X] = F[G[X]]})#H] {
+      override def traverse[M[_] : Applicative, A, B](fa: F[G[A]])(f: A => M[B]): M[F[G[B]]] =
+        self.traverse(fa)(ga => g.traverse(ga)(f))
+    }
 }
 
 object Traverse {

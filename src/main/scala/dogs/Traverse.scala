@@ -18,9 +18,20 @@ trait Traverse[F[_]] extends Functor[F] with Foldable[F] {
     type G[X] = Const[B, X]
     traverse(as)(a => f(a).asInstanceOf[G[B]])
   }
-}
 
-object Const {
+  def reverse[A](fa: F[A]): F[A] =
+    mapAccum(fa, toList(fa).reverse)((_, list) => (list.head, list.tail))._1
+
+  def zipWithIndex[A](fa: F[A]): F[(A, Int)] =
+    mapAccum(fa, 0)((a, idx) => ((a, idx), idx + 1))._1
+
+  def mapAccum[A, B, S](fa: F[A], s: S)(f: (A, S) => (B, S)): (F[B], S) =
+    traverse(fa) { a =>
+      for {
+        curr <- State.get[S]
+        (b, next) = f(a, curr)
+      } yield b
+    }.run(s).swap
 }
 
 object Traverse {

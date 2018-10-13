@@ -2,6 +2,9 @@ package dogs
 
 trait Foldable[F[_]] {
 
+  def reduce[A](as: F[A])(implicit ma: Monoid[A]): A =
+    foldMap(as)(identity)
+
   def foldMap[A, B](as: F[A])(f: A => B)(implicit mb: Monoid[B]): B
 
   def foldRight[A, B](as: F[A])(z: B)(f: (A, B) => B): B =

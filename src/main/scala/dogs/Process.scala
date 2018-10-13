@@ -146,5 +146,12 @@ object Process {
 
   def exists[I](f: I => Boolean): Process[I, Boolean] = lift(f) |> any
 
+  def existsFirst[I](f: I => Boolean): Process[I, Boolean] =
+    Await {
+      case Some(i) if f(i) => Emit(true)
+      case Some(_) => Emit(false, existsFirst(f))
+      case None => Halt()
+    }
+
   def any: Process[Boolean, Boolean] = loop(false)((a, s) => (a || s, a || s))
 }

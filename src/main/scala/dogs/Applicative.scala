@@ -2,9 +2,11 @@ package dogs
 
 import scala.language.reflectiveCalls
 
-trait Applicative[F[_]] extends Functor[F] { self =>
+trait Applicative[F[_]] extends Functor[F] with Semigroupal[F] { self =>
 
   def apply[A, B](fab: F[A => B])(fa: F[A]): F[B]
+
+  def applyF[A, B](f: F[A => B]): F[A] => F[B] = fa => apply(f)(fa)
 
   def unit[A](a: => A): F[A]
 
@@ -20,8 +22,10 @@ trait Applicative[F[_]] extends Functor[F] { self =>
   def map4[A, B, C, D, E](fa: F[A], fb: F[B], fc: F[C], fd: F[D])(f: (A, B, C, D) => E): F[E] =
     apply(apply(apply(apply(unit(f.curried))(fa))(fb))(fc))(fd)
 
-  def product[A, B](ma: F[A], mb: F[B]): F[(A, B)] =
-    map2(ma, mb)((_, _))
+  def product[A, B](ma: F[A], mb: F[B]): F[(A, B)] = {
+    val f: A => B => (A, B) = a => b => (a, b)
+    apply(lift(f)(ma))(mb)
+  }
 
   def product[G[_]: Applicative]: Applicative[({type H[X] = (F[X], G[X])})#H] =
     new Applicative[({type H[X] = (F[X], G[X])})#H] {

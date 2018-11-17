@@ -1,8 +1,7 @@
 package dogs
 
-trait Monoid[A] {
+trait Monoid[A] extends Semigroup[A] {
   def zero: A
-  def op(a1: A, a2: A): A
 }
 
 object Monoid {
@@ -52,18 +51,17 @@ object Monoid {
     override def op(a1: Boolean, a2: Boolean): Boolean = a1 && a2
   }
 
-  def foldMap[A, B](as: List[A], m: Monoid[B])(f: A => B): B =
+  def foldMap[A, B](as: List[A])(f: A => B)(implicit m: Monoid[B]): B =
     as.foldLeft(m.zero)((b1, a2) => m.op(b1, f(a2)))
 
-  def foldMapV[A, B: Monoid](v: IndexedSeq[A])(f: A => B): B = {
-    val mb = implicitly[Monoid[B]]
-    if (v.isEmpty) mb.zero
+  def foldMapV[A, B](v: IndexedSeq[A])(f: A => B)(implicit m: Monoid[B]): B = {
+    if (v.isEmpty) m.zero
     else v match {
       case IndexedSeq(v1) =>
         f(v1)
       case _ =>
         val (v1, v2) = v.splitAt(v.size / 2)
-        mb.op(foldMapV(v1)(f), foldMapV(v2)(f))
+        m.op(foldMapV(v1)(f), foldMapV(v2)(f))
     }
   }
 
